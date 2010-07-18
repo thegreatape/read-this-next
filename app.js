@@ -16,7 +16,8 @@ app.get('/', function(req, res){
 
 
 app.get('/goodreads', function(req, res){
-        goodreads.shelves.list('2003928-thomas', 1, function(chunk){res.send(chunk, {'Content-Type': 'text/plain'});})
+        goodreads.shelves.list('2003928-thomas', 1, function(body){res.send(body, {'Content-Type': 'text/plain'});
+    })
 });
 
 app.listen(3000);

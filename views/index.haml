@@ -1,0 +1,28 @@
+.span-12
+  %h2 Currently
+  %ul
+    :each book in currently
+      = partial("book", {locals: book})
+#recommend-form.span-12.last
+  %form{action:"", method:"POST"}
+    %fieldset
+        %legend Tell me what to read next!
+        %label{for:"name"} Your Name:
+        %br
+        %input.text{name:"name"}
+        %br
+        %label{for:"why"} Why?
+        %br
+        %textarea{name:"why", cols:"5", rows:"5"}
+        %br
+        %input{type:"submit", value: "submit"}
+.span-12
+  %h2 Read
+  %ul
+    :each book in read
+      = partial("book", {locals: book})
+.span-12.last
+  %h2 Queue
+  %ul
+    :each book in queue
+      = partial("book", {locals: book})

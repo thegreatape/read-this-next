@@ -6,8 +6,13 @@ var goodreads = http.createClient(80, 'www.goodreads.com');
 function request(url, args, callback){
     var req = goodreads.request('GET', build_path(url, args), {'host': 'www.goodreads.com'});
     req.end();
+
+    var data = "";
     req.addListener('response', function(response){
-            response.addListener('data', callback);
+            response.addListener('data', function(datum){
+                data += datum;
+            });
+            response.addListener('end', function(){callback(data);});
     }); 
 }
 

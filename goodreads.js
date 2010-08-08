@@ -1,3 +1,4 @@
+var sys = require('sys');
 var http = require('http');
 var config = require('./config').config;
 var querystring = require('querystring');
@@ -28,49 +29,84 @@ function build_path(url, args){
     return url + query; 
 }
 
-function jsonify(callback){
+function jsonify(callback, tagName){
     return function(xmlstring){
-        var data = {shelves: []};
         var doc = libxml.parseXmlString(xmlstring);
-        var shelves = doc.find('//user_shelf');
-        for(var i in shelves){
-            var shelf = {};
-            var childNodes = shelves[i].childNodes()
-            for(var j in childNodes){
-                var attr = childNodes[j];
-                shelf[attr.name()] = typecast(attr);
-            }
-            data.shelves.push(shelf);
-        }
-        return callback(data);
+        // XXX debug!
+        var items = doc.find('//'+tagName);
+        var result = {results: parse_elements(items)};
+        result.start = parseInt(doc.get('//results-start').text());
+        result.end = parseInt(doc.get('//results-end').text());
+        result.total = parseInt(doc.get('//total-results').text());
+        return callback(result);
     };
 }
 
-function typecast(node){
-    var type = node.attr('type');
-    var nil = node.attr('nil');
-    var text = node.text();
-    if(nil && nil.value() == "true"){
-        return null;
-    } else if(type){
-        var val = type.value();
-        if(val == "boolean"){
-            return !!(text == "true");
-        } else if(val == "integer"){
-            return parseInt(text, 10);
+function parse_element(node){
+    var item = {};
+    var childNodes = node.childNodes();
+    for(var j in childNodes){
+        var attr = childNodes[j];
+        if(attr.name() != "text"){
+            item[attr.name()] = typecast(attr);
         }
-    } 
+    }
+    return item;
+}
 
-    // default to string value of node
-    return text;
+function parse_elements(nodes){
+    var data = [];
+    for(var i in nodes){
+        data.push(parse_element(nodes[i]));
+    }
+    return data;
+}
+
+function typecast(node){
+    // check for sub-elements to jsonify
+    var children = node.childNodes();
+    if(children.length){
+        if(children.length == 1 && children[0].name() == "text"){
+            // no sub-elements, parse value
+            var type = node.attr('type');
+            var nil = node.attr('nil');
+            var text = node.text();
+            if(nil && nil.value() == "true"){
+                return null;
+            } else if(type){
+                var val = type.value();
+                if(val == "boolean"){
+                    return !!(text == "true");
+                } else if(val == "integer"){
+                    return parseInt(text, 10);
+                } else if(val == "float"){
+                    return parseFloat(text, 10);
+                }
+            } 
+            // default to string value of node
+            return text;
+        } else {
+            return parse_element(node);
+        }
+    }
+
 }
 
 exports.shelves = {};
-exports.shelves.list = function(user_id, page, callback){
+exports.shelves.list = function(user_id, page, callback) {
     request('/shelf/list',
-            {'format': 'xml',
-             'key': config.key,
-             'user_id': user_id,
-             'page': page}, 
-             jsonify(callback));
+            {format: 'xml',
+             key: config.key,
+             user_id: user_id,
+             page: page || 1}, 
+             jsonify(callback, 'user_shelf'));
+};
+
+exports.search = function(query, page, field, callback){
+    request('/search/search',
+            {q: query,
+             field: field || 'all',
+             page: page || 1,
+             key: config.key},
+             jsonify(callback, 'work'));
 };

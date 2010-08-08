@@ -7,6 +7,11 @@
   %form{action:"", method:"POST"}
     %fieldset
         %legend Tell me what to read next!
+        %label{for:"book"} Book:
+        %br
+        %input.text{name:"book", id: "book-field"}
+        %br
+        #search-results
         %label{for:"name"} Your Name:
         %br
         %input.text{name:"name"}

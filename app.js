@@ -31,7 +31,7 @@ function to_simple_booklist(result){
 app.get('/search', function(req, res){
     try {
         var write = function(result){
-            res.render('search.haml', {locals: {results: to_simple_booklist(result)}});
+            res.render('search.haml', {locals: {results: to_simple_booklist(result)}, layout: false});
         };
         goodreads.search(req.param('q'), 1, req.param('type'), write);
     } catch(e){

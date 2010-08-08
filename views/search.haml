@@ -1,0 +1,4 @@
+.span-12
+  %ul 
+    :each book in results
+      = partial("book", {locals: book})

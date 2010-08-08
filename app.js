@@ -16,7 +16,9 @@ app.get('/', function(req, res){
 
 
 app.get('/goodreads', function(req, res){
-        goodreads.shelves.list('2003928-thomas', 1, function(chunk){res.send(chunk, {'Content-Type': 'text/plain'});})
+        var write = function(result){res.send(result, {'Content-Type': 'text/plain'});}
+        //goodreads.shelves.list('2003928-thomas', 1, function(result){res.send(result, {'Content-Type': 'text/plain'});})
+        goodreads.search('Escher', 1, 'all', write);
 });
 
 app.listen(3000);

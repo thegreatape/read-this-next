@@ -32,12 +32,17 @@ function build_path(url, args){
 function jsonify(callback, tagName){
     return function(xmlstring){
         var doc = libxml.parseXmlString(xmlstring);
-        // XXX debug!
-        var items = doc.find('//'+tagName);
-        var result = {results: parse_elements(items)};
-        result.start = parseInt(doc.get('//results-start').text());
-        result.end = parseInt(doc.get('//results-end').text());
-        result.total = parseInt(doc.get('//total-results').text());
+        var items = doc.find('//'+tagName),
+            start = doc.get('//results-start'),
+            end = doc.get('//results-end'),
+            total = doc.get('//total-results');
+
+        var result = {
+            results: parse_elements(items),
+            start: parseInt( start ? start.text() : 0, 10),
+            end: parseInt( end ? end.text() : 0, 10),
+            total: parseInt( total ? total.text() : 0, 10)
+        };
         return callback(result);
     };
 }

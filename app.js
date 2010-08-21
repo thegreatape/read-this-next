@@ -35,7 +35,8 @@ app.get('/search', function(req, res){
         };
         goodreads.search(req.param('q'), 1, req.param('type'), write);
     } catch(e){
-        res.write(e.toString());
+        res.writeHead(500, {});
+        res.end(e.toString());
     }
 });
 

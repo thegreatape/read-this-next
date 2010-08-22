@@ -2,23 +2,25 @@ var sys = require('sys');
 var http = require('http');
 var config = require('./config').config;
 var querystring = require('querystring');
-var goodreads = http.createClient(80, 'www.goodreads.com');
 var libxml = require('libxmljs');
+var goodreads = http.createClient(80, 'www.goodreads.com');
 
-function request(url, args, callback){
+function request(url, args, cb){
     var req = goodreads.request('GET', build_path(url, args), {'host': 'www.goodreads.com'});
-    req.end();
+    sys.puts(build_path(url, args));
 
-    var data = "";
     req.addListener('response', function(response){
-            var data = "";
-            response.addListener('data', function(chunk){
-                data += chunk;
-            });
-            response.addListener('end', function(){
-                callback(data);
-            });
+        var buffer = "";
+        response.addListener('data', function(chunk, encoding){
+            buffer += chunk.toString(encoding);
+            sys.puts('chunk');
+        });
+        response.addListener('end', function(){
+            sys.puts('end');
+            cb(buffer);
+        });
     }); 
+    req.end();
 }
 
 function build_path(url, args){
@@ -52,10 +54,11 @@ function parse_element(node){
     var childNodes = node.childNodes();
     for(var j in childNodes){
         var attr = childNodes[j];
-        if(attr.name() != "text"){
+        if(attr.name()){
             item[attr.name()] = typecast(attr);
         }
     }
+    sys.debug(JSON.stringify(item));
     return item;
 }
 
@@ -71,28 +74,33 @@ function typecast(node){
     // check for sub-elements to jsonify
     var children = node.childNodes();
     if(children.length){
-        if(children.length == 1 && children[0].name() == "text"){
-            // no sub-elements, parse value
-            var type = node.attr('type');
-            var nil = node.attr('nil');
-            var text = node.text();
-            if(nil && nil.value() == "true"){
-                return null;
-            } else if(type){
-                var val = type.value();
-                if(val == "boolean"){
-                    return !!(text == "true");
-                } else if(val == "integer"){
-                    return parseInt(text, 10);
-                } else if(val == "float"){
-                    return parseFloat(text, 10);
-                }
-            } 
-            // default to string value of node
-            return text;
-        } else {
-            return parse_element(node);
+        // check if subnodes exist, or we're looking at pure text 
+        // or cdata children
+        for (var i=0; i < children.length; i++){
+            var name = children[i].name(); 
+            if(! (name === undefined || name == "text")){ // sub-element
+                return parse_element(node);
+            }
         }
+        // no sub-elements, parse value
+        var type = node.attr('type');
+        var nil = node.attr('nil');
+        var text = node.text();
+        if(nil && nil.value() == "true"){
+            return null;
+        } else if(type){
+            var val = type.value();
+            if(val == "boolean"){
+                return !!(text == "true");
+            } else if(val == "integer"){
+                return parseInt(text, 10);
+            } else if(val == "float"){
+                return parseFloat(text, 10);
+            }
+        } 
+        // default to string value of node
+        sys.debug("defaulting to text for "+node+"\n but text is "+text );
+        return text;
     }
 
 }
@@ -107,6 +115,24 @@ exports.shelves.list = function(user_id, page, callback) {
              jsonify(callback, 'user_shelf'));
 };
 
+exports.reviews = {};
+exports.reviews.list = function(user_id, shelf, order, num, sort, query, callback){
+    var args = {format: 'xml',
+                v: 2,
+                id: user_id,
+                shelf: shelf,
+                page: 1, 
+                key: config.key,
+                order: order,
+                per_page: num,
+                sort: sort};
+    if(query){
+        args.query = query;
+    }
+
+    request('/review/list', args, jsonify(callback, 'review'));
+};
+             
 exports.search = function(query, page, field, callback){
     request('/search/search',
             {q: query,

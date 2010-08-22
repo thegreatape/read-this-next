@@ -18,9 +18,16 @@ function to_simple_booklist(result){
     var books = [];
     var data = result.results;
     for(var i in data){
-        result = data[i].best_book;
+        // hooray wildly inconsistent data structurs
+        result = (data[i].best_book || data[i].book);
+        var author = "";
+        if(result.author){
+            author = result.author.name;
+        } else if(result.authors){
+            author = result.authors.author.name;
+        }
         books.push({ title: result.title,
-                     author: result.author.name,
+                     author: author,
                      img: result.small_image_url,
                      id: result.id,
                      recommender: ""});
@@ -43,9 +50,10 @@ app.get('/search', function(req, res){
 app.get('/goodreads', function(req, res){
     var write = function(result){
         res.render('search.haml', {locals: {results: to_simple_booklist(result)}});
-    };
+    }
+    goodreads.reviews.list('2003928-thomas', 'read', 'a', 50, 'date_read', null, write);
     //goodreads.shelves.list('2003928-thomas', 1, function(result){res.send(result, {'Content-Type': 'text/plain'});})
-    goodreads.search('Escher', 1, 'all', write);
+    //goodreads.search('Escher', 1, 'all', write);
 });
 
 app.listen(3000);
